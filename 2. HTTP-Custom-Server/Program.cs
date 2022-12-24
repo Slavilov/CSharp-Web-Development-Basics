@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -33,39 +33,42 @@ namespace HTTP_Server_Demo
                 TcpClient client = tcpListener.AcceptTcpClient();
 
                 // Get the client's stream, we are using one of the methods that the class "TcpClient" has!
-                //This variable helps us because it has everything that we need to communicate with the Client!
-                var stream = client.GetStream();
+                // This variable helps us because it has everything that we need to communicate with the Client!
+                /* Here we use "using" because if something is Stream or it is Disposable it has to be put into "using"
+                 * if it's not into "using" the Stream wont close and the browser is still waiting something from us! */
+                using (var stream = client.GetStream())
+                {
 
+                    /* How to read the Request from the Stream */
 
-                /* How to read the Request from the Stream */
+                    //1st - We make a buffer which will store what we have read!
+                    byte[] buffer = new byte[1000000];
 
-                //1st - We make a buffer which will store what we have read!
-                byte[] buffer = new byte[1000000];
+                    //2nd - We get the length of the Stream!
+                    /* Here with stream.Read we say to store the information in the "buffer" starting from 0
+                     * and to read the length of buffer.Length! */
+                    // Този метод, записва Стрийма и ни връща, колко на брой символа е прочел!
+                    var lengthOfRead = stream.Read(buffer, 0, buffer.Length);
 
-                //2nd - We get the length of the Stream!
-                /* Here with stream.Read we say to store the information in the "buffer" starting from 0
-                 * and to read the length of buffer.Length! */
-                // Този метод, записва Стрийма и ни връща, колко на брой символа е прочел!
-                var lengthOfRead = stream.Read(buffer, 0, buffer.Length);
+                    //We convert the stream into a string!
+                    string requestString = Encoding.UTF8.GetString(buffer, 0, lengthOfRead);
+                    Console.WriteLine(requestString);
 
-                //We convert the stream into a string!
-                string requestString = Encoding.UTF8.GetString(buffer, 0, lengthOfRead);
-                Console.WriteLine(requestString);
+                    Console.WriteLine(new String('=', 70));
 
-                Console.WriteLine(new String('=', 70));
+                    var html = $"<h1> Hello from my Server! :) You are trying to connect at:{DateTime.Now} </h1>";
 
-                var html = $"<h1> Hello from my Server! :) You are trying to connect at:{DateTime.Now} </h1>";
+                    // We will send a reponse to the Client which send us a Request! 
+                    string response = "HTTP/1.1 200 OK\r\n" +
+                                      "Server: VelichkoServer 2022 \r\n" +
+                                      "Content-Type: text/html;\r\n" +
+                                      "Content-Length: " + html.Length + "\r\n" +
+                                      "\r\n" +
+                                      html + "\r\n";
 
-                // We will send a reponse to the Client which send us a Request! 
-                string response = "HTTP/1.1 200 OK\r\n" +
-                                  "Server: VelichkoServer 2022 \r\n" +
-                                  "Content-Type: text/html;\r\n" +
-                                  "Content-Length: " + html.Length + "\r\n" +
-                                  "\r\n" +
-                                  html;
-
-                byte[] responseBytes = Encoding.UTF8.GetBytes(response);
-                stream.Write(responseBytes);
+                    byte[] responseBytes = Encoding.UTF8.GetBytes(response);
+                    stream.Write(responseBytes);
+                }
 
                 /* 1. До тук си отворихме един порт
                  * 2. Стартирахме си tcpListener-a 
